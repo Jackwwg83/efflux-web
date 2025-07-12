@@ -2,6 +2,8 @@
 
 A modern, secure web application for chatting with multiple AI models using your own API keys.
 
+🚀 **Live Demo**: [https://efflux-web.vercel.app](https://efflux-web.vercel.app)
+
 ## Features
 
 - 🤖 **Multi-Model Support**: OpenAI, Anthropic, Google AI, AWS Bedrock, Azure OpenAI
