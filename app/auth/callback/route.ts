@@ -1,5 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
@@ -9,11 +10,29 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('OAuth error:', error, error_description)
-    return NextResponse.redirect(new URL(`/login?error=${error}`, requestUrl.origin))
+    return NextResponse.redirect(new URL(`/login?error=server_error`, requestUrl.origin))
   }
 
   if (code) {
-    const supabase = createClient()
+    const cookieStore = cookies()
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            cookieStore.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
     
     try {
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
@@ -33,12 +52,30 @@ export async function GET(request: Request) {
             full_name: data.user.user_metadata?.full_name || data.user.user_metadata?.name,
             avatar_url: data.user.user_metadata?.avatar_url,
             updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'id'
           })
-          .select()
 
         if (profileError) {
           console.warn('Profile creation error:', profileError)
           // Don't fail the login for profile errors
+        }
+
+        // Also create user settings
+        const { error: settingsError } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: data.user.id,
+            default_model: 'gpt-4',
+            default_provider: 'openai',
+            preferences: {},
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id'
+          })
+
+        if (settingsError) {
+          console.warn('Settings creation error:', settingsError)
         }
       }
     } catch (error) {
