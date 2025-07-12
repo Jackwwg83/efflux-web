@@ -23,8 +23,12 @@ function LoginForm() {
     const urlError = searchParams.get('error')
     if (urlError) {
       const errorMessages: Record<string, string> = {
-        'auth_error': 'Authentication failed. Please try again.',
+        'oauth_error': 'OAuth authentication failed. Please try again.',
+        'session_error': 'Failed to create session. Please try again.',
         'callback_error': 'Login callback failed. Please try again.',
+        'no_code': 'Authentication code missing. Please try again.',
+        'no_session': 'Session creation failed. Please try again.',
+        'auth_error': 'Authentication failed. Please try again.',
         'server_error': 'Server error occurred. Please try again.',
         'access_denied': 'Access was denied. Please try again.',
       }
@@ -73,11 +77,9 @@ function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+          redirectTo: process.env.NODE_ENV === 'production' 
+            ? 'https://efflux-web.vercel.app/auth/callback'
+            : `${window.location.origin}/auth/callback`,
         },
       })
 
