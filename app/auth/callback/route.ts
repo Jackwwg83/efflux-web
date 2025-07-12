@@ -6,13 +6,22 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const error = requestUrl.searchParams.get('error')
+  const error_description = requestUrl.searchParams.get('error_description')
 
-  console.log('OAuth callback - code:', !!code, 'error:', error)
+  console.log('=== OAuth Callback Debug ===')
+  console.log('URL:', requestUrl.toString())
+  console.log('Code present:', !!code)
+  console.log('Error:', error)
+  console.log('Error description:', error_description)
+  console.log('All params:', Object.fromEntries(requestUrl.searchParams.entries()))
 
-  // Handle OAuth errors
+  // Handle OAuth errors with detailed info
   if (error) {
-    console.error('OAuth error:', error)
-    return NextResponse.redirect(new URL(`/login?error=oauth_error`, requestUrl.origin))
+    console.error('OAuth error details:', { error, error_description })
+    const errorParam = error_description ? 
+      `oauth_error&details=${encodeURIComponent(error_description)}` : 
+      'oauth_error'
+    return NextResponse.redirect(new URL(`/login?error=${errorParam}`, requestUrl.origin))
   }
 
   if (!code) {
