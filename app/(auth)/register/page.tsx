@@ -36,16 +36,25 @@ export default function RegisterPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('=== Supabase Debug Info ===')
+      console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+      console.log('SUPABASE_KEY exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+      console.log('Supabase client:', supabase)
+      
+      console.log('Attempting signUp...')
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       })
+
+      console.log('SignUp result:', { data, error })
 
       if (error) throw error
 
       setSuccess(true)
     } catch (error: any) {
-      setError(error.message)
+      console.error('Registration error:', error)
+      setError(`Registration failed: ${error.message}`)
     } finally {
       setLoading(false)
     }
