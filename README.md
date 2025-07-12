@@ -4,6 +4,12 @@ A modern, secure web application for chatting with multiple AI models using your
 
 🚀 **Live Demo**: [https://efflux-web.vercel.app](https://efflux-web.vercel.app)
 
+## 📚 重要文档
+
+- 📖 **[部署指南](./DEPLOYMENT_GUIDE.md)** - 完整的 Supabase + Vercel 部署步骤
+- 🔧 **[故障排除](./TROUBLESHOOTING.md)** - 常见错误及解决方案
+- 📋 **[项目总结](./PROJECT_SUMMARY.md)** - 技术架构和开发记录
+
 ## Features
 
 - 🤖 **Multi-Model Support**: OpenAI, Anthropic, Google AI, AWS Bedrock, Azure OpenAI
