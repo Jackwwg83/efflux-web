@@ -77,9 +77,7 @@ function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: process.env.NODE_ENV === 'production' 
-            ? 'https://efflux-web.vercel.app/auth/callback'
-            : `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
