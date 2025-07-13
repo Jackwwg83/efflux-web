@@ -7,7 +7,7 @@ import { Settings, Bot } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useVaultStore } from '@/lib/stores/vault'
 import { AIManager } from '@/lib/ai/manager'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 
 type Conversation = Database['public']['Tables']['conversations']['Row']
 
@@ -19,6 +19,7 @@ interface ChatHeaderProps {
 export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
   const router = useRouter()
   const { apiKeys, isUnlocked } = useVaultStore()
+  const [dynamicModels, setDynamicModels] = useState<any[]>([])
   const [isLoadingModels, setIsLoadingModels] = useState(false)
   
   // Get available models based on configured API keys
@@ -41,24 +42,34 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
     const syncModels = aiManager.getAvailableModelsSync()
     console.log('Sync models loaded:', syncModels.length, syncModels)
     
-    // Load async models in background
-    if (!isLoadingModels) {
-      setIsLoadingModels(true)
-      console.log('Starting async model loading...')
-      
-      aiManager.getAvailableModels().then(asyncModels => {
-        console.log('Async models loaded:', asyncModels.length, asyncModels)
-        setIsLoadingModels(false)
-        // Force re-render by updating a state
-        // The useMemo will pick up the new models automatically
-      }).catch(error => {
-        console.error('Failed to load dynamic models:', error)
-        setIsLoadingModels(false)
-      })
-    }
+    // Return dynamic models if available, otherwise sync models
+    const models = dynamicModels.length > 0 ? dynamicModels : syncModels
+    console.log('Final models for UI:', models.length, models)
     
-    return syncModels
-  }, [apiKeys, isLoadingModels, isUnlocked])
+    return models
+  }, [apiKeys, isUnlocked, dynamicModels])
+
+  // Load dynamic models
+  useEffect(() => {
+    if (!apiKeys || Object.keys(apiKeys).length === 0 || isLoadingModels) {
+      return
+    }
+
+    setIsLoadingModels(true)
+    console.log('Starting async model loading...')
+    
+    const aiManager = new AIManager()
+    aiManager.setApiKeys(apiKeys)
+    
+    aiManager.getAvailableModels().then(asyncModels => {
+      console.log('Async models loaded:', asyncModels.length, asyncModels)
+      setDynamicModels(asyncModels)
+      setIsLoadingModels(false)
+    }).catch(error => {
+      console.error('Failed to load dynamic models:', error)
+      setIsLoadingModels(false)
+    })
+  }, [apiKeys, isUnlocked])
   
   const currentModel = conversation?.settings.model || (availableModels[0]?.id || 'gpt-4')
   const currentProvider = conversation?.settings.provider || (availableModels[0]?.provider || 'openai')
