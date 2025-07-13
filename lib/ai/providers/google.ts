@@ -95,13 +95,44 @@ export class GoogleProvider extends BaseAIProvider {
           
           const hasGenerateContent = model.supportedGenerationMethods.includes('generateContent')
           const isGemini = model.name.includes('gemini') // 使用 name 字段检查
-          console.log(`Model ${model.name}: generateContent=${hasGenerateContent}, isGemini=${isGemini}`)
-          return hasGenerateContent && isGemini
+          
+          // 过滤掉不适合聊天的模型
+          const excludePatterns = [
+            'embedding',      // 嵌入模型
+            'aqa',           // 问答专用模型
+            'gecko',         // 老的嵌入模型
+            'text-embedding', // 嵌入模型
+            'tts',           // 语音合成模型
+            'image-generation', // 图像生成专用模型
+            'vision-latest',  // 老的视觉模型（有更新版本）
+            'pro-vision'     // 老的视觉模型（有更新版本）
+          ]
+          
+          const shouldExclude = excludePatterns.some(pattern => 
+            model.name.toLowerCase().includes(pattern.toLowerCase())
+          )
+          
+          console.log(`Model ${model.name}: generateContent=${hasGenerateContent}, isGemini=${isGemini}, shouldExclude=${shouldExclude}`)
+          return hasGenerateContent && isGemini && !shouldExclude
         })
       
       console.log('Filtered models count:', filteredModels.length)
       
-      this._models = filteredModels.map(model => {
+      // 去重：基于模型名称去重，保留最新版本
+      const uniqueModels = new Map<string, any>()
+      filteredModels.forEach(model => {
+        const baseModelId = model.name.replace('models/', '')
+        const baseName = baseModelId.replace(/-\d{3}$/, '').replace(/-latest$/, '').replace(/-preview.*$/, '')
+        
+        if (!uniqueModels.has(baseName) || 
+            baseModelId.includes('latest') || 
+            baseModelId.includes('2.5') || 
+            baseModelId.includes('2.0')) {
+          uniqueModels.set(baseName, model)
+        }
+      })
+      
+      this._models = Array.from(uniqueModels.values()).map(model => {
         // 从 name 提取 baseModelId: "models/gemini-2.5-flash" -> "gemini-2.5-flash"
         const baseModelId = model.name.replace('models/', '')
         

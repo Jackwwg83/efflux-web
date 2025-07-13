@@ -71,8 +71,20 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
     })
   }, [apiKeys, isUnlocked])
   
-  const currentModel = conversation?.settings.model || (availableModels[0]?.id || 'gpt-4')
-  const currentProvider = conversation?.settings.provider || (availableModels[0]?.provider || 'openai')
+  const currentModel = conversation?.settings.model || (() => {
+    // 智能选择默认模型：优先选择最新的 Gemini 模型
+    if (availableModels.length === 0) return 'gpt-4'
+    
+    const preferredOrder = ['2.5-flash', '2.0-flash', '1.5-flash', '1.5-pro']
+    for (const preference of preferredOrder) {
+      const found = availableModels.find(m => m.id.includes(preference))
+      if (found) return found.id
+    }
+    
+    return availableModels[0]?.id || 'gpt-4'
+  })()
+  
+  const currentProvider = conversation?.settings.provider || (availableModels.find(m => m.id === currentModel)?.provider || 'openai')
 
   const handleSettingsClick = () => {
     router.push('/settings')
@@ -118,11 +130,21 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
             }}
           >
             <SelectTrigger className="w-48">
-              <SelectValue />
+              <SelectValue>
+                {availableModels.find(m => m.id === currentModel)?.name || currentModel}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {availableModels.map((model) => (
-                <SelectItem key={model.id} value={model.id}>
+              {availableModels
+                .sort((a, b) => {
+                  // 排序逻辑：优先显示最新模型
+                  const aScore = a.id.includes('2.5') ? 3 : a.id.includes('2.0') ? 2 : a.id.includes('1.5') ? 1 : 0
+                  const bScore = b.id.includes('2.5') ? 3 : b.id.includes('2.0') ? 2 : b.id.includes('1.5') ? 1 : 0
+                  if (aScore !== bScore) return bScore - aScore
+                  return a.name.localeCompare(b.name)
+                })
+                .map((model, index) => (
+                <SelectItem key={`${model.provider}-${model.id}-${index}`} value={model.id}>
                   <div className="flex flex-col">
                     <span>{model.name}</span>
                     <span className="text-xs text-muted-foreground capitalize">
