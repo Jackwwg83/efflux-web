@@ -36,9 +36,9 @@ export const useVaultStore = create<VaultStore>()(
     {
       name: 'vault-store',
       partialize: (state) => ({ 
-        // 会话级解锁：保持解锁状态和API密钥，但不保存密码
+        // 会话级解锁：保持解锁状态、密码和API密钥用于会话持续性
         isUnlocked: state.isUnlocked,
-        password: null, // 密码永不持久化
+        password: state.password, // 会话级保存密码（刷新页面后保持）
         apiKeys: state.apiKeys, // 保存已解密的API密钥
       }),
     }

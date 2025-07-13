@@ -20,7 +20,7 @@ export default function ChatPage() {
   const supabase = createClient()
   const queryClient = useQueryClient()
   const vaultManager = getVaultManager()
-  const { isUnlocked, password, unlock } = useVaultStore()
+  const { isUnlocked, password, unlock, apiKeys } = useVaultStore()
 
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
@@ -165,7 +165,15 @@ export default function ChatPage() {
   })
 
   const streamAIResponse = async (userMessage: string) => {
-    if (!currentConversationId || !password) return
+    if (!currentConversationId) return
+    
+    // Check if we have API keys available
+    const { apiKeys } = useVaultStore.getState()
+    if (!apiKeys) {
+      console.error('No API keys available')
+      router.push('/settings?action=unlock')
+      return
+    }
     
     setIsStreaming(true)
     const controller = new AbortController()
@@ -193,7 +201,7 @@ export default function ChatPage() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-vault-password': password,
+          'x-api-keys': JSON.stringify(apiKeys),
         },
         body: JSON.stringify({
           conversationId: currentConversationId,
@@ -311,7 +319,7 @@ export default function ChatPage() {
       message,
       currentConversationId,
       isUnlocked,
-      hasPassword: !!password
+      hasApiKeys: !!apiKeys
     })
     
     if (!currentConversationId) {
@@ -324,7 +332,7 @@ export default function ChatPage() {
     
     console.log('💬 Sending message to existing conversation:', currentConversationId)
     sendMessageMutation.mutate({ message })
-  }, [currentConversationId, createConversationMutation, sendMessageMutation])
+  }, [currentConversationId, createConversationMutation, sendMessageMutation, apiKeys])
 
   const currentConversation = conversations.find(c => c.id === currentConversationId)
 
@@ -380,7 +388,7 @@ export default function ChatPage() {
         
         {/* Debug info */}
         <div className="p-2 text-xs text-gray-500 border-t">
-          Debug: isUnlocked={isUnlocked.toString()}, hasPassword={!!password}, 
+          Debug: isUnlocked={isUnlocked.toString()}, hasApiKeys={!!apiKeys}, 
           currentConversationId={currentConversationId || 'none'}
         </div>
       </div>

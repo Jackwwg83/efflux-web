@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { getVaultManager } from '@/lib/crypto/vault'
 import { getAIManager } from '@/lib/ai/manager'
 import { NextRequest } from 'next/server'
 import { headers } from 'next/headers'
@@ -67,21 +66,20 @@ export async function POST(request: NextRequest) {
       content: message,
     })
 
-    // Get user's password from headers (you'll need to pass this from frontend)
-    const userPassword = headers().get('x-vault-password')
-    if (!userPassword) {
-      return new Response(JSON.stringify({ error: 'Vault password required' }), {
+    // Get API keys from headers (passed from frontend)
+    const apiKeysHeader = headers().get('x-api-keys')
+    if (!apiKeysHeader) {
+      return new Response(JSON.stringify({ error: 'API keys required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       })
     }
 
-    // Load API keys
-    const vaultManager = getVaultManager()
-    const apiKeys = await vaultManager.loadApiKeys(userPassword)
-    
-    if (!apiKeys) {
-      return new Response(JSON.stringify({ error: 'Failed to decrypt API keys' }), {
+    let apiKeys
+    try {
+      apiKeys = JSON.parse(apiKeysHeader)
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Invalid API keys format' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       })
