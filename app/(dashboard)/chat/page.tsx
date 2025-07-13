@@ -266,15 +266,21 @@ export default function ChatPage() {
         if (done) break
         
         const chunk = new TextDecoder().decode(value)
+        console.log('📦 Raw chunk received:', chunk)
         const lines = chunk.split('\n').filter(line => line.trim())
+        console.log('📝 Parsed lines:', lines)
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6))
+              const jsonStr = line.slice(6).trim()
+              console.log('🔍 Parsing JSON:', jsonStr)
+              const data = JSON.parse(jsonStr)
+              console.log('✅ Parsed data:', data)
               
               if (data.type === 'content') {
                 fullContent += data.content
+                console.log('💬 Updated content:', fullContent)
                 
                 // Update message in database
                 await supabase
@@ -284,6 +290,7 @@ export default function ChatPage() {
                 
                 queryClient.invalidateQueries({ queryKey: ['messages', currentConversationId] })
               } else if (data.type === 'done') {
+                console.log('🏁 Stream completed, final content:', fullContent)
                 // Final update with token usage
                 if (data.usage) {
                   await supabase
@@ -298,10 +305,11 @@ export default function ChatPage() {
                 }
                 break
               } else if (data.type === 'error') {
+                console.error('❌ Stream error:', data.error)
                 throw new Error(data.error)
               }
             } catch (e) {
-              console.error('Error parsing SSE data:', e)
+              console.error('❌ Error parsing SSE data:', e, 'Line:', line)
             }
           }
         }
