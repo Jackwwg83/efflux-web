@@ -20,6 +20,14 @@ export function MessageList({
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
+  // Debug logging
+  console.log('📋 MessageList render:', {
+    messageCount: messages.length,
+    messages: messages.map(m => ({ id: m.id, role: m.role, hasContent: !!m.content, contentLength: m.content?.length || 0 })),
+    isStreaming,
+    streamingMessageId
+  })
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isStreaming])
