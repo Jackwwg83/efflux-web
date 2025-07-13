@@ -19,16 +19,6 @@ function MessageItemComponent({ message, isStreaming = false }: MessageItemProps
   const isUser = message.role === 'user'
   const isAssistant = message.role === 'assistant'
 
-  // Debug logging
-  console.log('🎭 MessageItem render:', {
-    role: message.role,
-    hasContent: !!message.content,
-    contentLength: message.content?.length || 0,
-    content: message.content,
-    isStreaming,
-    messageId: message.id
-  })
-
   const handleCopy = async () => {
     if (message.content) {
       await navigator.clipboard.writeText(message.content)
@@ -38,7 +28,6 @@ function MessageItemComponent({ message, isStreaming = false }: MessageItemProps
   }
 
   if (!message.content && !isStreaming) {
-    console.log('❌ MessageItem hidden due to no content:', message)
     return null
   }
 
