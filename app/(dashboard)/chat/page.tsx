@@ -409,8 +409,32 @@ export default function ChatPage() {
       <div className="flex flex-1 flex-col">
         <ChatHeader
           conversation={currentConversation}
-          onModelChange={(model, provider) => {
-            // TODO: Update conversation settings
+          onModelChange={async (model, provider) => {
+            if (!currentConversationId) return
+            
+            console.log(`🔄 Updating conversation model to: ${model} (${provider})`)
+            
+            try {
+              const { error } = await supabase
+                .from('conversations')
+                .update({
+                  settings: {
+                    model,
+                    provider,
+                  },
+                })
+                .eq('id', currentConversationId)
+              
+              if (error) {
+                console.error('❌ Failed to update conversation settings:', error)
+              } else {
+                console.log('✅ Conversation settings updated')
+                // Invalidate queries to refresh the UI
+                queryClient.invalidateQueries({ queryKey: ['conversations'] })
+              }
+            } catch (error) {
+              console.error('❌ Error updating conversation settings:', error)
+            }
           }}
         />
         

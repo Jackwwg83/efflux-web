@@ -231,16 +231,22 @@ export class GoogleProvider extends BaseAIProvider {
         parts: [{ text: msg.content }],
       }))
 
+      console.log(`🔄 Starting chat with ${history.length} history messages`)
       const chat = model.startChat({ history })
       
       // Get the last message
       const lastMessage = messages[messages.length - 1]
+      console.log(`📤 Sending message: "${lastMessage.content}"`)
       const result = await chat.sendMessageStream(lastMessage.content)
 
       let totalContent = ''
+      let chunkCount = 0
 
+      console.log(`🔄 Starting to process stream...`)
       for await (const chunk of result.stream) {
+        chunkCount++
         const text = chunk.text()
+        console.log(`📦 Chunk ${chunkCount}: "${text}"`)
         if (text) {
           yield {
             type: 'content',
@@ -250,10 +256,13 @@ export class GoogleProvider extends BaseAIProvider {
         }
       }
 
+      console.log(`✅ Stream completed. Total chunks: ${chunkCount}, Total content length: ${totalContent.length}`)
+
       // Get final response for token counting
       const finalResponse = await result.response
       const usage = finalResponse.usageMetadata
 
+      console.log(`📊 Usage stats:`, usage)
       yield {
         type: 'done',
         usage: {
