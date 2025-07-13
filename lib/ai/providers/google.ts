@@ -2,12 +2,33 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { BaseAIProvider } from '../base'
 import { ChatMessage, ChatOptions, ChatChunk, ModelInfo } from '@/types/ai'
 
+interface GoogleModel {
+  name: string
+  baseModelId: string
+  version: string
+  displayName: string
+  description: string
+  inputTokenLimit: number
+  outputTokenLimit: number
+  supportedGenerationMethods: string[]
+}
+
+interface ListModelsResponse {
+  models: GoogleModel[]
+  nextPageToken?: string
+}
+
 export class GoogleProvider extends BaseAIProvider {
   private client: GoogleGenerativeAI
+  private _models: ModelInfo[] = []
+  private _modelsLoaded = false
+  private _loadingPromise: Promise<void> | null = null
 
   constructor(apiKey: string) {
     super(apiKey)
     this.client = new GoogleGenerativeAI(apiKey)
+    // Start loading models asynchronously
+    this._loadingPromise = this.loadModels()
   }
 
   get id() {
@@ -19,13 +40,83 @@ export class GoogleProvider extends BaseAIProvider {
   }
 
   get models(): ModelInfo[] {
+    return this._models
+  }
+
+  // Ensure models are loaded before using
+  async ensureModelsLoaded(): Promise<void> {
+    if (this._modelsLoaded) return
+    if (this._loadingPromise) {
+      await this._loadingPromise
+    }
+  }
+
+  private async loadModels(): Promise<void> {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
+      )
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data: ListModelsResponse = await response.json()
+      
+      // Filter and convert to our ModelInfo format
+      this._models = data.models
+        .filter(model => 
+          model.supportedGenerationMethods.includes('generateContent') &&
+          model.baseModelId.startsWith('gemini')
+        )
+        .map(model => ({
+          id: model.baseModelId,
+          name: model.displayName || model.baseModelId,
+          provider: 'google' as const,
+          contextLength: model.inputTokenLimit,
+          description: model.description,
+          capabilities: this.getModelCapabilities(model),
+        }))
+
+      this._modelsLoaded = true
+      console.log(`Loaded ${this._models.length} Google models:`, this._models.map(m => m.name))
+    } catch (error) {
+      console.warn('Failed to load Google models from API, using fallback:', error)
+      // Use fallback models if API fails
+      this._models = this.getFallbackModels()
+      this._modelsLoaded = true
+    }
+  }
+
+  private getModelCapabilities(model: GoogleModel): string[] {
+    const capabilities = ['chat']
+    
+    // Check if model supports vision (usually indicated by having high context limits)
+    if (model.inputTokenLimit > 100000) {
+      capabilities.push('vision')
+    }
+    
+    // Most modern Gemini models support function calling
+    if (model.baseModelId.includes('1.5') || model.baseModelId.includes('2.0')) {
+      capabilities.push('function-calling')
+    }
+    
+    // Experimental models might have code execution
+    if (model.baseModelId.includes('exp') || model.baseModelId.includes('2.0')) {
+      capabilities.push('code-execution')
+    }
+    
+    return capabilities
+  }
+
+  private getFallbackModels(): ModelInfo[] {
     return [
       {
         id: 'gemini-1.5-pro-latest',
         name: 'Gemini 1.5 Pro',
         provider: 'google',
-        contextLength: 1048576, // 1M tokens
-        description: 'Most capable Gemini model with massive context window',
+        contextLength: 2097152,
+        description: 'Most capable production Gemini model',
         capabilities: ['chat', 'vision', 'function-calling'],
       },
       {
@@ -35,14 +126,6 @@ export class GoogleProvider extends BaseAIProvider {
         contextLength: 1048576,
         description: 'Fast and efficient for high-frequency tasks',
         capabilities: ['chat', 'vision', 'function-calling'],
-      },
-      {
-        id: 'gemini-pro',
-        name: 'Gemini Pro',
-        provider: 'google',
-        contextLength: 32768,
-        description: 'Balanced performance for general tasks',
-        capabilities: ['chat', 'function-calling'],
       },
     ]
   }

@@ -7,7 +7,7 @@ import { Settings, Bot } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useVaultStore } from '@/lib/stores/vault'
 import { AIManager } from '@/lib/ai/manager'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 type Conversation = Database['public']['Tables']['conversations']['Row']
 
@@ -19,6 +19,7 @@ interface ChatHeaderProps {
 export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
   const router = useRouter()
   const { apiKeys } = useVaultStore()
+  const [isLoadingModels, setIsLoadingModels] = useState(false)
   
   // Get available models based on configured API keys
   const availableModels = useMemo(() => {
@@ -26,8 +27,26 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
     
     const aiManager = new AIManager()
     aiManager.setApiKeys(apiKeys)
-    return aiManager.getAvailableModels()
-  }, [apiKeys])
+    
+    // Start with sync models (fallback/cached)
+    const syncModels = aiManager.getAvailableModelsSync()
+    
+    // Load async models in background
+    if (!isLoadingModels) {
+      setIsLoadingModels(true)
+      aiManager.getAvailableModels().then(asyncModels => {
+        // This will trigger a re-render with updated models
+        setIsLoadingModels(false)
+        // Force re-render by updating a state
+        // The useMemo will pick up the new models automatically
+      }).catch(error => {
+        console.warn('Failed to load dynamic models:', error)
+        setIsLoadingModels(false)
+      })
+    }
+    
+    return syncModels
+  }, [apiKeys, isLoadingModels])
   
   const currentModel = conversation?.settings.model || (availableModels[0]?.id || 'gpt-4')
   const currentProvider = conversation?.settings.provider || (availableModels[0]?.provider || 'openai')

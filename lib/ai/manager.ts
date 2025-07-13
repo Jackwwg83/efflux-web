@@ -41,8 +41,25 @@ export class AIManager {
     }
   }
 
-  // Get all available models
-  getAvailableModels(): ModelInfo[] {
+  // Get all available models (async to ensure they're loaded)
+  async getAvailableModels(): Promise<ModelInfo[]> {
+    const models: ModelInfo[] = []
+    
+    for (const provider of this.providers.values()) {
+      if (provider) {
+        // Ensure models are loaded for providers that support it
+        if ('ensureModelsLoaded' in provider) {
+          await (provider as any).ensureModelsLoaded()
+        }
+        models.push(...provider.models)
+      }
+    }
+    
+    return models
+  }
+
+  // Get available models synchronously (may return empty if not loaded yet)
+  getAvailableModelsSync(): ModelInfo[] {
     const models: ModelInfo[] = []
     
     for (const provider of this.providers.values()) {
