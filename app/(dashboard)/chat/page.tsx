@@ -95,13 +95,18 @@ export default function ChatPage() {
     queryFn: async () => {
       if (!currentConversationId) return []
       
+      console.log('🔄 Loading messages for conversation:', currentConversationId)
       const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', currentConversationId)
         .order('created_at', { ascending: true })
       
-      if (error) throw error
+      if (error) {
+        console.error('❌ Messages query error:', error)
+        throw error
+      }
+      console.log('📬 Messages loaded:', data?.length || 0, data)
       return data as Message[]
     },
     enabled: !!currentConversationId,
@@ -297,11 +302,19 @@ export default function ChatPage() {
                 console.log('💬 Updated content:', fullContent)
                 
                 // Update message in database
-                await supabase
+                console.log('💾 Updating message in database:', assistantMessage.id)
+                const { error: updateError } = await supabase
                   .from('messages')
                   .update({ content: fullContent })
                   .eq('id', assistantMessage.id)
                 
+                if (updateError) {
+                  console.error('❌ Error updating message:', updateError)
+                } else {
+                  console.log('✅ Message updated in database')
+                }
+                
+                console.log('🔄 Invalidating queries...')
                 queryClient.invalidateQueries({ queryKey: ['messages', currentConversationId] })
               } else if (data.type === 'done') {
                 console.log('🏁 Stream completed, final content:', fullContent)
