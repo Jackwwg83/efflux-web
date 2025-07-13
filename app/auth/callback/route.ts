@@ -65,9 +65,22 @@ export async function GET(request: Request) {
 
     console.log('Session created successfully for user:', data.user.email)
 
-    // Simple profile creation - don't fail login if this fails
+    // Simple profile creation - use service client to bypass RLS
     try {
-      await supabase
+      // Create a service client with service_role key to bypass RLS
+      const { createClient } = await import('@supabase/supabase-js')
+      const serviceSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      )
+
+      await serviceSupabase
         .from('profiles')
         .upsert({
           id: data.user.id,
@@ -79,7 +92,7 @@ export async function GET(request: Request) {
           updated_at: new Date().toISOString(),
         })
 
-      console.log('Profile upserted successfully')
+      console.log('Profile upserted successfully using service client')
     } catch (profileError) {
       console.warn('Profile creation failed (non-critical):', profileError)
     }
