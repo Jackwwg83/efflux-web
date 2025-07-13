@@ -137,9 +137,16 @@ export default function ChatPage() {
       
       console.log(`📝 Creating new conversation with model: ${defaultModel}, provider: ${defaultProvider}`)
       
+      // Get current user for RLS compliance
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+      
       const { data, error } = await supabase
         .from('conversations')
         .insert({
+          user_id: user.id, // Required for RLS policy
           title: 'New Conversation',
           settings: {
             model: defaultModel,
