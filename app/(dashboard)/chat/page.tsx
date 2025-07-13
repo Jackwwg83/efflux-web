@@ -26,6 +26,7 @@ export default function ChatPage() {
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null)
 
   // Check if user has vault and redirect if needed
   useEffect(() => {
@@ -79,13 +80,40 @@ export default function ChatPage() {
   // Create new conversation
   const createConversationMutation = useMutation({
     mutationFn: async () => {
+      // Get current vault and determine best default model
+      let defaultModel = 'gpt-4'
+      let defaultProvider = 'openai'
+      
+      if (password) {
+        try {
+          const apiKeys = await vaultManager.loadApiKeys(password)
+          if (apiKeys) {
+            // Prefer Google Gemini 2.5-flash if available
+            if (apiKeys.google) {
+              defaultModel = 'gemini-2.5-flash'
+              defaultProvider = 'google'
+            } else if (apiKeys.anthropic) {
+              defaultModel = 'claude-3-5-sonnet-20241022'
+              defaultProvider = 'anthropic'
+            } else if (apiKeys.openai) {
+              defaultModel = 'gpt-4'
+              defaultProvider = 'openai'
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to load API keys for default model selection:', error)
+        }
+      }
+      
+      console.log(`📝 Creating new conversation with model: ${defaultModel}, provider: ${defaultProvider}`)
+      
       const { data, error } = await supabase
         .from('conversations')
         .insert({
           title: 'New Conversation',
           settings: {
-            model: 'gpt-4',
-            provider: 'openai',
+            model: defaultModel,
+            provider: defaultProvider,
           },
         })
         .select()
@@ -97,6 +125,15 @@ export default function ChatPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
       setCurrentConversationId(data.id)
+      
+      // Send pending message if there is one
+      if (pendingMessage) {
+        // Small delay to ensure conversation is set
+        setTimeout(() => {
+          sendMessageMutation.mutate({ message: pendingMessage })
+          setPendingMessage(null)
+        }, 100)
+      }
     },
   })
 
@@ -271,9 +308,9 @@ export default function ChatPage() {
 
   const handleSendMessage = useCallback((message: string) => {
     if (!currentConversationId) {
-      // Create new conversation first
+      // Store the message and create new conversation
+      setPendingMessage(message)
       createConversationMutation.mutate()
-      // Note: the message will be lost here - you might want to queue it
       return
     }
     

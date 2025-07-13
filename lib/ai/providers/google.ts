@@ -207,8 +207,16 @@ export class GoogleProvider extends BaseAIProvider {
     options: ChatOptions
   ): AsyncGenerator<ChatChunk> {
     try {
+      // Ensure model name has proper format for Google AI SDK
+      let modelName = options.model
+      if (!modelName.startsWith('models/')) {
+        modelName = `models/${modelName}`
+      }
+      
+      console.log(`🤖 Google Provider: Using model "${modelName}" for chat`)
+      
       const model = this.client.getGenerativeModel({ 
-        model: options.model,
+        model: modelName,
         generationConfig: {
           temperature: options.temperature,
           topP: options.topP,
