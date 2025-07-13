@@ -134,13 +134,16 @@ export class GoogleProvider extends BaseAIProvider {
       capabilities.push('vision')
     }
     
+    // Extract baseModelId from name field for capability checking
+    const baseModelId = model.name.replace('models/', '')
+    
     // Most modern Gemini models support function calling
-    if (model.baseModelId.includes('1.5') || model.baseModelId.includes('2.0')) {
+    if (baseModelId.includes('1.5') || baseModelId.includes('2.0')) {
       capabilities.push('function-calling')
     }
     
     // Experimental models might have code execution
-    if (model.baseModelId.includes('exp') || model.baseModelId.includes('2.0')) {
+    if (baseModelId.includes('exp') || baseModelId.includes('2.0')) {
       capabilities.push('code-execution')
     }
     
