@@ -27,14 +27,17 @@ export default function ChatPage() {
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
 
-  // Check if user has vault and redirect to settings if needed
+  // Check if user has vault and redirect if needed
   useEffect(() => {
     const checkVaultStatus = async () => {
-      if (!isUnlocked) {
-        const hasVault = await vaultManager.hasVault()
-        if (!hasVault) {
-          router.push('/settings')
-        }
+      const hasVault = await vaultManager.hasVault()
+      
+      if (!hasVault) {
+        // No vault at all - redirect to settings to create one
+        router.push('/settings')
+      } else if (!isUnlocked) {
+        // Has vault but not unlocked - redirect to settings to unlock
+        router.push('/settings?action=unlock')
       }
     }
     

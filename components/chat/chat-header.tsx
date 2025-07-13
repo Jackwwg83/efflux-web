@@ -18,7 +18,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
   const router = useRouter()
-  const { apiKeys } = useVaultStore()
+  const { apiKeys, isUnlocked } = useVaultStore()
   const [isLoadingModels, setIsLoadingModels] = useState(false)
   
   // Get available models based on configured API keys
@@ -55,6 +55,19 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
     router.push('/settings')
   }
 
+  // Check vault status and provide appropriate message
+  const getStatusMessage = () => {
+    if (!isUnlocked) {
+      return "Vault locked - click settings to unlock"
+    }
+    if (!apiKeys || Object.keys(apiKeys).length === 0) {
+      return "No API keys configured"
+    }
+    return null
+  }
+
+  const statusMessage = getStatusMessage()
+
   return (
     <div className="flex items-center justify-between border-b bg-background p-4">
       <div className="flex items-center space-x-3">
@@ -67,7 +80,11 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
       </div>
       
       <div className="flex items-center space-x-2">
-        {availableModels.length > 0 ? (
+        {statusMessage ? (
+          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <span>{statusMessage}</span>
+          </div>
+        ) : availableModels.length > 0 ? (
           <Select
             value={currentModel}
             onValueChange={(value) => {
@@ -95,7 +112,7 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
           </Select>
         ) : (
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <span>No API keys configured</span>
+            <span>No models available</span>
           </div>
         )}
         
