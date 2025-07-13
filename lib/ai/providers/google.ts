@@ -27,7 +27,10 @@ export class GoogleProvider extends BaseAIProvider {
   constructor(apiKey: string) {
     super(apiKey)
     this.client = new GoogleGenerativeAI(apiKey)
-    // Start loading models asynchronously
+    // Initialize with fallback models immediately
+    this._models = this.getFallbackModels()
+    this._modelsLoaded = false
+    // Start loading models asynchronously to replace fallback
     this._loadingPromise = this.loadModels()
   }
 

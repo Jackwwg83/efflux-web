@@ -36,10 +36,10 @@ export const useVaultStore = create<VaultStore>()(
     {
       name: 'vault-store',
       partialize: (state) => ({ 
-        // Don't persist password for security - user needs to re-enter
-        isUnlocked: false,
-        password: null,
-        apiKeys: null,
+        // 会话级解锁：保持解锁状态和API密钥，但不保存密码
+        isUnlocked: state.isUnlocked,
+        password: null, // 密码永不持久化
+        apiKeys: state.apiKeys, // 保存已解密的API密钥
       }),
     }
   )
