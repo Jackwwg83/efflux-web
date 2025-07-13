@@ -75,9 +75,21 @@ export class GoogleProvider extends BaseAIProvider {
       console.log('Raw API response:', data)
       console.log('Total models from API:', data.models?.length || 0)
       
+      // 安全检查：确保 models 数组存在
+      if (!data.models || !Array.isArray(data.models)) {
+        console.error('Invalid API response: models array missing or invalid')
+        throw new Error('Invalid API response format')
+      }
+      
       // Filter and convert to our ModelInfo format
       const filteredModels = data.models
         .filter(model => {
+          // 安全检查：确保必要字段存在
+          if (!model.baseModelId || !model.supportedGenerationMethods) {
+            console.log(`Skipping model due to missing fields:`, model)
+            return false
+          }
+          
           const hasGenerateContent = model.supportedGenerationMethods.includes('generateContent')
           const isGemini = model.baseModelId.startsWith('gemini')
           console.log(`Model ${model.baseModelId}: generateContent=${hasGenerateContent}, isGemini=${isGemini}`)
