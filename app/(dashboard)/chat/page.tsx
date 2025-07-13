@@ -247,6 +247,7 @@ export default function ChatPage() {
     
     try {
       // Create placeholder assistant message
+      console.log('📝 Creating assistant message placeholder...')
       const { data: assistantMessage, error } = await supabase
         .from('messages')
         .insert({
@@ -257,7 +258,11 @@ export default function ChatPage() {
         .select()
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('❌ Error creating assistant message:', error)
+        throw error
+      }
+      console.log('✅ Assistant message created:', assistantMessage)
       
       setStreamingMessageId(assistantMessage.id)
       queryClient.invalidateQueries({ queryKey: ['messages', currentConversationId] })
