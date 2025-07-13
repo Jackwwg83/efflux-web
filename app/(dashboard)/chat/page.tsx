@@ -28,6 +28,31 @@ export default function ChatPage() {
   const [abortController, setAbortController] = useState<AbortController | null>(null)
   const [pendingMessage, setPendingMessage] = useState<string | null>(null)
 
+  // Debug vault store state
+  useEffect(() => {
+    console.log('🔍 Vault Store Debug:', {
+      isUnlocked,
+      hasPassword: !!password,
+      hasApiKeys: !!apiKeys,
+      apiKeysType: typeof apiKeys,
+      apiKeysKeys: apiKeys ? Object.keys(apiKeys) : 'null',
+      storeState: useVaultStore.getState()
+    })
+  }, [isUnlocked, password, apiKeys])
+
+  // Debug auth state
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      console.log('🔐 Auth Debug:', {
+        user: user ? { id: user.id, email: user.email } : null,
+        error: error?.message,
+        sessionValid: !!user
+      })
+    }
+    checkAuth()
+  }, [])
+
   // Check if user has vault and redirect if needed
   useEffect(() => {
     const checkVaultStatus = async () => {
@@ -49,12 +74,17 @@ export default function ChatPage() {
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
+      console.log('🗂️ Loading conversations...')
       const { data, error } = await supabase
         .from('conversations')
         .select('*')
         .order('last_message_at', { ascending: false })
       
-      if (error) throw error
+      if (error) {
+        console.error('❌ Conversations query error:', error)
+        throw error
+      }
+      console.log('✅ Conversations loaded:', data?.length || 0)
       return data as Conversation[]
     },
   })
@@ -119,7 +149,11 @@ export default function ChatPage() {
         .select()
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('❌ Failed to create conversation:', error)
+        throw error
+      }
+      console.log('✅ Conversation created:', data.id)
       return data as Conversation
     },
     onSuccess: (data) => {
