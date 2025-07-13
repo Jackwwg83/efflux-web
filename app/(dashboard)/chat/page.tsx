@@ -106,7 +106,13 @@ export default function ChatPage() {
         console.error('❌ Messages query error:', error)
         throw error
       }
-      console.log('📬 Messages loaded:', data?.length || 0, data)
+      console.log('📬 Messages loaded:', data?.length || 0, data?.map(m => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        contentLength: m.content?.length || 0,
+        created_at: m.created_at
+      })))
       return data as Message[]
     },
     enabled: !!currentConversationId,
@@ -303,15 +309,16 @@ export default function ChatPage() {
                 
                 // Update message in database
                 console.log('💾 Updating message in database:', assistantMessage.id)
-                const { error: updateError } = await supabase
+                const { data: updateResult, error: updateError } = await supabase
                   .from('messages')
                   .update({ content: fullContent })
                   .eq('id', assistantMessage.id)
+                  .select()
                 
                 if (updateError) {
                   console.error('❌ Error updating message:', updateError)
                 } else {
-                  console.log('✅ Message updated in database')
+                  console.log('✅ Message updated in database, result:', updateResult)
                 }
                 
                 console.log('🔄 Invalidating queries...')
