@@ -23,30 +23,42 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
   
   // Get available models based on configured API keys
   const availableModels = useMemo(() => {
-    if (!apiKeys) return []
+    console.log('=== ChatHeader Debug ===')
+    console.log('isUnlocked:', isUnlocked)
+    console.log('apiKeys:', apiKeys)
+    
+    if (!apiKeys) {
+      console.log('No apiKeys found')
+      return []
+    }
+    
+    console.log('API Keys available:', Object.keys(apiKeys))
     
     const aiManager = new AIManager()
     aiManager.setApiKeys(apiKeys)
     
     // Start with sync models (fallback/cached)
     const syncModels = aiManager.getAvailableModelsSync()
+    console.log('Sync models loaded:', syncModels.length, syncModels)
     
     // Load async models in background
     if (!isLoadingModels) {
       setIsLoadingModels(true)
+      console.log('Starting async model loading...')
+      
       aiManager.getAvailableModels().then(asyncModels => {
-        // This will trigger a re-render with updated models
+        console.log('Async models loaded:', asyncModels.length, asyncModels)
         setIsLoadingModels(false)
         // Force re-render by updating a state
         // The useMemo will pick up the new models automatically
       }).catch(error => {
-        console.warn('Failed to load dynamic models:', error)
+        console.error('Failed to load dynamic models:', error)
         setIsLoadingModels(false)
       })
     }
     
     return syncModels
-  }, [apiKeys, isLoadingModels])
+  }, [apiKeys, isLoadingModels, isUnlocked])
   
   const currentModel = conversation?.settings.model || (availableModels[0]?.id || 'gpt-4')
   const currentProvider = conversation?.settings.provider || (availableModels[0]?.provider || 'openai')

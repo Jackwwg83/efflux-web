@@ -52,38 +52,56 @@ export class GoogleProvider extends BaseAIProvider {
   }
 
   private async loadModels(): Promise<void> {
+    console.log('=== Google Provider Loading Models ===')
+    console.log('API Key length:', this.apiKey.length)
+    console.log('API Key starts with:', this.apiKey.substring(0, 20) + '...')
+    
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
-      )
+      const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
+      console.log('Fetching from URL:', url.replace(this.apiKey, 'API_KEY_HIDDEN'))
+      
+      const response = await fetch(url)
+      
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
       
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error response:', errorText)
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       const data: ListModelsResponse = await response.json()
+      console.log('Raw API response:', data)
+      console.log('Total models from API:', data.models?.length || 0)
       
       // Filter and convert to our ModelInfo format
-      this._models = data.models
-        .filter(model => 
-          model.supportedGenerationMethods.includes('generateContent') &&
-          model.baseModelId.startsWith('gemini')
-        )
-        .map(model => ({
-          id: model.baseModelId,
-          name: model.displayName || model.baseModelId,
-          provider: 'google' as const,
-          contextLength: model.inputTokenLimit,
-          description: model.description,
-          capabilities: this.getModelCapabilities(model),
-        }))
+      const filteredModels = data.models
+        .filter(model => {
+          const hasGenerateContent = model.supportedGenerationMethods.includes('generateContent')
+          const isGemini = model.baseModelId.startsWith('gemini')
+          console.log(`Model ${model.baseModelId}: generateContent=${hasGenerateContent}, isGemini=${isGemini}`)
+          return hasGenerateContent && isGemini
+        })
+      
+      console.log('Filtered models count:', filteredModels.length)
+      
+      this._models = filteredModels.map(model => ({
+        id: model.baseModelId,
+        name: model.displayName || model.baseModelId,
+        provider: 'google' as const,
+        contextLength: model.inputTokenLimit,
+        description: model.description,
+        capabilities: this.getModelCapabilities(model),
+      }))
 
       this._modelsLoaded = true
-      console.log(`Loaded ${this._models.length} Google models:`, this._models.map(m => m.name))
+      console.log(`✅ Successfully loaded ${this._models.length} Google models:`, this._models.map(m => m.name))
     } catch (error) {
-      console.warn('Failed to load Google models from API, using fallback:', error)
+      console.error('❌ Failed to load Google models from API:', error)
       // Use fallback models if API fails
       this._models = this.getFallbackModels()
+      console.log(`📦 Using ${this._models.length} fallback models:`, this._models.map(m => m.name))
       this._modelsLoaded = true
     }
   }
