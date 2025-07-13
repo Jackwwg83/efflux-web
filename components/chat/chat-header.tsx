@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Settings, Bot } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useVaultStore } from '@/lib/stores/vault'
+import { AIManager } from '@/lib/ai/manager'
+import { useMemo } from 'react'
 
 type Conversation = Database['public']['Tables']['conversations']['Row']
 
@@ -13,19 +16,21 @@ interface ChatHeaderProps {
   onModelChange?: (model: string, provider: string) => void
 }
 
-// Available models - TODO: load from AI manager
-const availableModels = [
-  { id: 'gpt-4', name: 'GPT-4', provider: 'openai' },
-  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'openai' },
-  { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', provider: 'anthropic' },
-  { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', provider: 'anthropic' },
-  { id: 'gemini-1.5-pro-latest', name: 'Gemini 1.5 Pro', provider: 'google' },
-]
-
 export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
   const router = useRouter()
-  const currentModel = conversation?.settings.model || 'gpt-4'
-  const currentProvider = conversation?.settings.provider || 'openai'
+  const { apiKeys } = useVaultStore()
+  
+  // Get available models based on configured API keys
+  const availableModels = useMemo(() => {
+    if (!apiKeys) return []
+    
+    const aiManager = new AIManager()
+    aiManager.setApiKeys(apiKeys)
+    return aiManager.getAvailableModels()
+  }, [apiKeys])
+  
+  const currentModel = conversation?.settings.model || (availableModels[0]?.id || 'gpt-4')
+  const currentProvider = conversation?.settings.provider || (availableModels[0]?.provider || 'openai')
 
   const handleSettingsClick = () => {
     router.push('/settings')
@@ -43,31 +48,37 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
       </div>
       
       <div className="flex items-center space-x-2">
-        <Select
-          value={currentModel}
-          onValueChange={(value) => {
-            const model = availableModels.find(m => m.id === value)
-            if (model && onModelChange) {
-              onModelChange(model.id, model.provider)
-            }
-          }}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {availableModels.map((model) => (
-              <SelectItem key={model.id} value={model.id}>
-                <div className="flex flex-col">
-                  <span>{model.name}</span>
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {model.provider}
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {availableModels.length > 0 ? (
+          <Select
+            value={currentModel}
+            onValueChange={(value) => {
+              const model = availableModels.find(m => m.id === value)
+              if (model && onModelChange) {
+                onModelChange(model.id, model.provider)
+              }
+            }}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableModels.map((model) => (
+                <SelectItem key={model.id} value={model.id}>
+                  <div className="flex flex-col">
+                    <span>{model.name}</span>
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {model.provider}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <span>No API keys configured</span>
+          </div>
+        )}
         
         <Button variant="ghost" size="icon" onClick={handleSettingsClick}>
           <Settings className="h-4 w-4" />
