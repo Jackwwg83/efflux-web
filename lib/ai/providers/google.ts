@@ -3,14 +3,14 @@ import { BaseAIProvider } from '../base'
 import { ChatMessage, ChatOptions, ChatChunk, ModelInfo } from '@/types/ai'
 
 interface GoogleModel {
-  name: string
-  baseModelId: string
-  version: string
-  displayName: string
+  name: string           // "models/gemini-2.5-flash-lite-preview-06-17"
+  version: string        // "2.5-preview-06-17"
+  displayName: string    // "Gemini 2.5 Flash-Lite Preview 06-17"
   description: string
   inputTokenLimit: number
   outputTokenLimit: number
   supportedGenerationMethods: string[]
+  // Note: baseModelId doesn't exist in actual API response
 }
 
 interface ListModelsResponse {
@@ -88,27 +88,32 @@ export class GoogleProvider extends BaseAIProvider {
       const filteredModels = data.models
         .filter(model => {
           // 安全检查：确保必要字段存在
-          if (!model.baseModelId || !model.supportedGenerationMethods) {
+          if (!model.name || !model.supportedGenerationMethods) {
             console.log(`Skipping model due to missing fields:`, model)
             return false
           }
           
           const hasGenerateContent = model.supportedGenerationMethods.includes('generateContent')
-          const isGemini = model.baseModelId.startsWith('gemini')
-          console.log(`Model ${model.baseModelId}: generateContent=${hasGenerateContent}, isGemini=${isGemini}`)
+          const isGemini = model.name.includes('gemini') // 使用 name 字段检查
+          console.log(`Model ${model.name}: generateContent=${hasGenerateContent}, isGemini=${isGemini}`)
           return hasGenerateContent && isGemini
         })
       
       console.log('Filtered models count:', filteredModels.length)
       
-      this._models = filteredModels.map(model => ({
-        id: model.baseModelId,
-        name: model.displayName || model.baseModelId,
-        provider: 'google' as const,
-        contextLength: model.inputTokenLimit,
-        description: model.description,
-        capabilities: this.getModelCapabilities(model),
-      }))
+      this._models = filteredModels.map(model => {
+        // 从 name 提取 baseModelId: "models/gemini-2.5-flash" -> "gemini-2.5-flash"
+        const baseModelId = model.name.replace('models/', '')
+        
+        return {
+          id: baseModelId,
+          name: model.displayName || baseModelId,
+          provider: 'google' as const,
+          contextLength: model.inputTokenLimit,
+          description: model.description,
+          capabilities: this.getModelCapabilities(model),
+        }
+      })
 
       this._modelsLoaded = true
       console.log(`✅ Successfully loaded ${this._models.length} Google models:`, this._models.map(m => m.name))
