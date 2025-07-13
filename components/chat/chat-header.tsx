@@ -4,6 +4,7 @@ import { Database } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Settings, Bot } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 type Conversation = Database['public']['Tables']['conversations']['Row']
 
@@ -22,8 +23,13 @@ const availableModels = [
 ]
 
 export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
+  const router = useRouter()
   const currentModel = conversation?.settings.model || 'gpt-4'
   const currentProvider = conversation?.settings.provider || 'openai'
+
+  const handleSettingsClick = () => {
+    router.push('/settings')
+  }
 
   return (
     <div className="flex items-center justify-between border-b bg-background p-4">
@@ -63,7 +69,7 @@ export function ChatHeader({ conversation, onModelChange }: ChatHeaderProps) {
           </SelectContent>
         </Select>
         
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={handleSettingsClick}>
           <Settings className="h-4 w-4" />
         </Button>
       </div>
