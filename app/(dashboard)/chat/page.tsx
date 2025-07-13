@@ -307,13 +307,22 @@ export default function ChatPage() {
   }, [])
 
   const handleSendMessage = useCallback((message: string) => {
+    console.log('🟡 ChatPage handleSendMessage called:', {
+      message,
+      currentConversationId,
+      isUnlocked,
+      hasPassword: !!password
+    })
+    
     if (!currentConversationId) {
+      console.log('📝 No conversation, storing message and creating new conversation')
       // Store the message and create new conversation
       setPendingMessage(message)
       createConversationMutation.mutate()
       return
     }
     
+    console.log('💬 Sending message to existing conversation:', currentConversationId)
     sendMessageMutation.mutate({ message })
   }, [currentConversationId, createConversationMutation, sendMessageMutation])
 
@@ -368,6 +377,12 @@ export default function ChatPage() {
           isStreaming={isStreaming}
           onStopStreaming={handleStopStreaming}
         />
+        
+        {/* Debug info */}
+        <div className="p-2 text-xs text-gray-500 border-t">
+          Debug: isUnlocked={isUnlocked.toString()}, hasPassword={!!password}, 
+          currentConversationId={currentConversationId || 'none'}
+        </div>
       </div>
     </div>
   )

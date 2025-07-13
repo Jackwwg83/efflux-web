@@ -23,9 +23,23 @@ export function MessageInput({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🔵 MessageInput handleSubmit called:', {
+      message: message.trim(),
+      disabled,
+      isStreaming,
+      messageLength: message.trim().length
+    })
+    
     if (message.trim() && !disabled && !isStreaming) {
+      console.log('✅ Calling onSendMessage with:', message.trim())
       onSendMessage(message.trim())
       setMessage('')
+    } else {
+      console.log('❌ Message not sent due to conditions:', {
+        hasMessage: !!message.trim(),
+        notDisabled: !disabled,
+        notStreaming: !isStreaming
+      })
     }
   }
 
