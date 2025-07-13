@@ -181,9 +181,11 @@ export default function ChatPage() {
   // Send message
   const sendMessageMutation = useMutation({
     mutationFn: async ({ message }: { message: string }) => {
+      console.log('📝 sendMessageMutation starting:', { message, currentConversationId })
       if (!currentConversationId) throw new Error('No conversation selected')
       
       // Add user message to database
+      console.log('💾 Saving user message to database...')
       const { data: userMessage, error } = await supabase
         .from('messages')
         .insert({
@@ -194,28 +196,40 @@ export default function ChatPage() {
         .select()
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('❌ Error saving user message:', error)
+        throw error
+      }
+      console.log('✅ User message saved:', userMessage)
       return userMessage as Message
     },
     onSuccess: (userMessage) => {
+      console.log('🎉 sendMessageMutation onSuccess called:', userMessage)
       queryClient.invalidateQueries({ queryKey: ['messages', currentConversationId] })
       
       // Start streaming AI response
+      console.log('🚀 Starting streamAIResponse...')
       streamAIResponse(userMessage.content!)
+    },
+    onError: (error) => {
+      console.error('❌ sendMessageMutation error:', error)
     },
   })
 
   const streamAIResponse = async (userMessage: string) => {
+    console.log('🔄 streamAIResponse called:', { userMessage, currentConversationId })
     if (!currentConversationId) return
     
     // Check if we have API keys available
     const { apiKeys } = useVaultStore.getState()
+    console.log('🔑 API keys check:', { hasApiKeys: !!apiKeys, apiKeysCount: apiKeys ? Object.keys(apiKeys).length : 0 })
     if (!apiKeys) {
       console.error('No API keys available')
       router.push('/settings?action=unlock')
       return
     }
     
+    console.log('🎬 Starting streaming process...')
     setIsStreaming(true)
     const controller = new AbortController()
     setAbortController(controller)
