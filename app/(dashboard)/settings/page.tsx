@@ -33,6 +33,10 @@ export default function SettingsPage() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
   const [validationStatus, setValidationStatus] = useState<Record<string, boolean | null>>({})
 
+  // Forgot password state
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null)
+
   useEffect(() => {
     checkVaultStatus()
   }, [])
@@ -106,6 +110,21 @@ export default function SettingsPage() {
     setValidationStatus(status)
   }
 
+  const handleForgotPassword = async () => {
+    setResetLoading(true)
+    setError(null)
+    setResetSuccess(null)
+
+    try {
+      await vaultManager.requestVaultReset()
+      setResetSuccess('Reset email sent! Check your email for reset instructions.')
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
   const handleSaveKey = async (provider: keyof APIKeys, value: any) => {
     if (!isUnlocked) return
     
@@ -176,6 +195,13 @@ export default function SettingsPage() {
               </Alert>
             )}
 
+            {resetSuccess && (
+              <Alert>
+                <Check className="h-4 w-4" />
+                <AlertDescription>{resetSuccess}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="password">Vault Password</Label>
               <div className="relative">
@@ -225,6 +251,19 @@ export default function SettingsPage() {
                 {loading ? 'Loading...' : hasVault ? 'Unlock' : 'Create'}
               </Button>
             </div>
+
+            {hasVault && (
+              <div className="text-center">
+                <Button
+                  variant="link"
+                  onClick={handleForgotPassword}
+                  disabled={resetLoading}
+                  className="text-sm text-muted-foreground"
+                >
+                  {resetLoading ? 'Sending...' : 'Forgot your vault password?'}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

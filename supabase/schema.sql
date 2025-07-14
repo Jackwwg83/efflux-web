@@ -77,6 +77,16 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Vault reset tokens table
+CREATE TABLE IF NOT EXISTS vault_reset_tokens (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes for better performance
 CREATE INDEX idx_conversations_user_id ON conversations(user_id);
 CREATE INDEX idx_conversations_last_message ON conversations(last_message_at DESC);
@@ -84,6 +94,9 @@ CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX idx_messages_created_at ON messages(created_at);
 CREATE INDEX idx_prompt_templates_user_id ON prompt_templates(user_id);
 CREATE INDEX idx_prompt_templates_public ON prompt_templates(is_public) WHERE is_public = true;
+CREATE INDEX idx_vault_reset_tokens_user_id ON vault_reset_tokens(user_id);
+CREATE INDEX idx_vault_reset_tokens_token ON vault_reset_tokens(token);
+CREATE INDEX idx_vault_reset_tokens_expires ON vault_reset_tokens(expires_at);
 
 -- Row Level Security (RLS)
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
@@ -92,6 +105,7 @@ ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prompt_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcp_servers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vault_reset_tokens ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 -- User settings
@@ -146,6 +160,10 @@ CREATE POLICY "Users can delete own templates" ON prompt_templates
 
 -- MCP servers
 CREATE POLICY "Users can manage own MCP servers" ON mcp_servers
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Vault reset tokens  
+CREATE POLICY "Users can manage own vault reset tokens" ON vault_reset_tokens
   FOR ALL USING (auth.uid() = user_id);
 
 -- Functions
