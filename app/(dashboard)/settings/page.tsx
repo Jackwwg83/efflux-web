@@ -43,6 +43,7 @@ export default function SettingsPage() {
 
   const checkVaultStatus = async () => {
     const exists = await vaultManager.hasVault()
+    console.log('🔐 Vault exists:', exists)
     setHasVault(exists)
   }
 
@@ -253,15 +254,21 @@ export default function SettingsPage() {
             </div>
 
             {hasVault && (
-              <div className="text-center">
-                <Button
-                  variant="link"
-                  onClick={handleForgotPassword}
-                  disabled={resetLoading}
-                  className="text-sm text-muted-foreground"
-                >
-                  {resetLoading ? 'Sending...' : 'Forgot your vault password?'}
-                </Button>
+              <div className="pt-4 border-t">
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">Forgot your vault password?</p>
+                  <Button
+                    variant="outline"
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                    className="w-full"
+                  >
+                    {resetLoading ? 'Sending Reset Email...' : 'Reset Vault Password'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    This will send a reset link to your email address
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>
