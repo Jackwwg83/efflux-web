@@ -201,7 +201,7 @@ export default function VaultResetPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter a strong password"
-                disabled={loading || success}
+                disabled={loading || !!success}
               />
               <Button
                 type="button"
@@ -209,7 +209,7 @@ export default function VaultResetPage() {
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 py-2"
                 onClick={() => setShowPassword(!showPassword)}
-                disabled={loading || success}
+                disabled={loading || !!success}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
@@ -225,7 +225,7 @@ export default function VaultResetPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
-                disabled={loading || success}
+                disabled={loading || !!success}
               />
               <Button
                 type="button"
@@ -233,7 +233,7 @@ export default function VaultResetPage() {
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 py-2"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                disabled={loading || success}
+                disabled={loading || !!success}
               >
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
@@ -258,7 +258,7 @@ export default function VaultResetPage() {
             </Button>
             <Button
               onClick={handleResetPassword}
-              disabled={loading || !newPassword || !confirmPassword || success}
+              disabled={loading || !newPassword || !confirmPassword || !!success}
               className="flex-1"
             >
               {loading ? 'Resetting...' : 'Reset Password'}
