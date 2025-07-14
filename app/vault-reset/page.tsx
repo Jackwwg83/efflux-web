@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { ArrowLeft, Eye, EyeOff, Check, AlertTriangle } from 'lucide-react'
 import { getVaultManager } from '@/lib/crypto/vault'
 import { useVaultStore } from '@/lib/stores/vault'
 
-export default function VaultResetPage() {
+function VaultResetContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -267,5 +267,27 @@ export default function VaultResetPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function VaultResetPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Loading...</CardTitle>
+            <CardDescription>Please wait while we load the reset page...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <VaultResetContent />
+    </Suspense>
   )
 }
