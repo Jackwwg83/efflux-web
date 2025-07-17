@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, StopCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { TemplateSelector } from '@/components/prompts/TemplateSelector'
+import { PromptTemplate } from '@/types/database'
 
 interface MessageInputProps {
   onSendMessage: (message: string) => void
@@ -56,6 +58,28 @@ export function MessageInput({
     }
   }, [isStreaming])
 
+  const handleTemplateSelect = (template: PromptTemplate, processedContent: string) => {
+    setMessage(processedContent)
+    // 自动聚焦到输入框，方便用户继续编辑
+    if (inputRef.current) {
+      inputRef.current.focus()
+    }
+  }
+
+  // 添加键盘快捷键支持
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+        e.preventDefault()
+        // 触发模板选择器打开
+        // 这个功能将在 TemplateSelector 组件中实现
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   return (
     <div className="border-t bg-background p-4">
       <form onSubmit={handleSubmit} className="flex space-x-2">
@@ -76,6 +100,12 @@ export function MessageInput({
             className="resize-none"
           />
         </div>
+        
+        <TemplateSelector
+          onSelectTemplate={handleTemplateSelect}
+          disabled={disabled || isStreaming}
+        />
+        
         {isStreaming && onStopStreaming ? (
           <Button
             type="button"

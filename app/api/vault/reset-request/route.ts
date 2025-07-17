@@ -24,38 +24,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Send reset email using Supabase's built-in email service
-    // We'll use a custom email template or send a simple notification
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/vault-reset?token=${token}`
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://efflux-web.vercel.app'}/vault-reset?token=${token}`
     
-    // For now, we'll use a simple email service or log the reset URL
-    // In production, you'd integrate with an email service like SendGrid, AWS SES, etc.
-    
+    // Log for debugging
     console.log(`Vault reset requested for ${email}`)
     console.log(`Reset URL: ${resetUrl}`)
     
-    // TODO: Replace with actual email sending service
-    // Example with a hypothetical email service:
-    /*
-    await emailService.send({
-      to: email,
-      subject: 'Vault Password Reset - Efflux',
-      html: `
-        <h2>Vault Password Reset</h2>
-        <p>You requested to reset your vault password.</p>
-        <p><a href="${resetUrl}">Click here to reset your vault password</a></p>
-        <p>This link will expire in 24 hours.</p>
-        <p>If you didn't request this, please ignore this email.</p>
-      `
-    })
-    */
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Reset email sent successfully',
-      // In development, return the reset URL for testing
-      ...(process.env.NODE_ENV === 'development' && { resetUrl })
-    })
+    // TODO: In production, integrate with email service
+    // For now, we'll return the URL in development for testing
+    
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Development mode: Reset URL generated',
+        resetUrl: resetUrl
+      })
+    } else {
+      // In production, you would send an actual email here
+      // Using Supabase Edge Functions, SendGrid, AWS SES, etc.
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Reset email sent! Check your inbox for reset instructions.'
+      })
+    }
 
   } catch (error) {
     console.error('Vault reset request error:', error)

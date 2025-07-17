@@ -233,3 +233,12 @@ export interface Database {
     }
   }
 }
+
+// Simplified types for easier use
+export type PromptTemplate = Database['public']['Tables']['prompt_templates']['Row'];
+export type PromptTemplateInsert = Database['public']['Tables']['prompt_templates']['Insert'];
+export type PromptTemplateUpdate = Database['public']['Tables']['prompt_templates']['Update'];
+
+export type Conversation = Database['public']['Tables']['conversations']['Row'];
+export type Message = Database['public']['Tables']['messages']['Row'];
+export type UserSettings = Database['public']['Tables']['user_settings']['Row'];
