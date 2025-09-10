@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "terry": {
+      "command": "node",
+      "args": [
+        "/tmp/terry-mcp-server.mjs"
+      ]
+    }
+  }
+}

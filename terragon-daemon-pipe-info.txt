@@ -1,0 +1,32 @@
+Terragon Daemon Named Pipe Information
+=====================================
+
+文件路径: /tmp/terragon-daemon.pipe
+文件类型: Named Pipe (FIFO)
+权限: prw-rw-rw-
+所有者: root:root
+大小: 0 字节 (命名管道始终显示为0字节)
+
+创建时间: 2025-09-09 16:29
+
+说明:
+这是Terragon系统中用于进程间通信的命名管道文件。
+- Terragon daemon 通过此管道接收来自外部的任务请求
+- 管道使用FIFO (First In, First Out) 方式传递JSON格式的消息
+- 任务消息结构通常包含: type, model, prompt, sessionId, token, threadId 等字段
+
+命名管道特性:
+- 这是一个特殊的文件系统对象，不是普通文件
+- 数据通过内核缓冲区传递，不存储在磁盘上
+- 写入数据会阻塞直到有读取进程
+- 读取数据会阻塞直到有写入数据
+
+用法示例:
+echo '{"type":"claude","prompt":"hello"}' > /tmp/terragon-daemon.pipe
+
+注意: 
+此文件是系统运行时创建的特殊文件，无法直接复制内容。
+此文档仅用于记录该管道的存在和用途。
+
+分析时间: 2025-09-09
+分析者: Terry (Claude AI Assistant)
